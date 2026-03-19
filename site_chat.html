@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Chat POC</title>
+
+<style>
+
+body{
+    font-family: Arial;
+    background:#f0f0f0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    margin:0;
+}
+
+.chat{
+    width:420px;
+    height:550px;
+    background:white;
+    display:flex;
+    flex-direction:column;
+    border-radius:8px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+.header{
+    background:#1976d2;
+    color:white;
+    padding:10px;
+}
+
+.controls{
+    padding:10px;
+    display:flex;
+    gap:5px;
+}
+
+.controls input{
+    flex:1;
+    padding:5px;
+}
+
+.messages{
+    flex:1;
+    padding:10px;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.msg{
+    padding:8px;
+    border-radius:6px;
+    background:#e0e0e0;
+}
+
+.self{
+    background:#1976d2;
+    color:white;
+    align-self:flex-end;
+}
+
+.input{
+    display:flex;
+    border-top:1px solid #ddd;
+}
+
+.input input{
+    flex:1;
+    padding:10px;
+    border:none;
+}
+
+.input button{
+    padding:10px;
+    border:none;
+    background:#1976d2;
+    color:white;
+}
+
+.status{
+    font-size:12px;
+    padding:5px 10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="chat">
+
+<div class="header">Chat Kafka + WebSocket</div>
+
+<div class="status" id="status">connecting...</div>
+
+<div class="controls">
+<input id="sender" placeholder="user (ex: A)">
+<input id="room" placeholder="room (ex: room-1)">
+<button onclick="join()">JOIN</button>
+</div>
+
+<div class="messages" id="messages"></div>
+
+<div class="input">
+<input id="text" placeholder="message">
+<button onclick="send()">Send</button>
+</div>
+
+</div>
+
+<script>
+
+const ws = new WebSocket("ws://localhost:8080/ws")
+
+const messages = document.getElementById("messages")
+const status = document.getElementById("status")
+
+ws.onopen = () => status.innerText = "connected"
+ws.onclose = () => status.innerText = "disconnected"
+ws.onerror = () => status.innerText = "error"
+
+ws.onmessage = (event) => {
+
+    const msg = JSON.parse(event.data)
+
+    addMessage(msg, false)
+}
+
+function join(){
+
+    const sender = document.getElementById("sender").value
+    const room = document.getElementById("room").value
+
+    const msg = {
+        type: "JOIN",
+        sender: sender,
+        roomId: room,
+        text: ""
+    }
+
+    ws.send(JSON.stringify(msg))
+}
+
+function send(){
+
+    const sender = document.getElementById("sender").value
+    const room = document.getElementById("room").value
+    const text = document.getElementById("text").value
+
+    if(!text) return
+
+    const msg = {
+        type: "CHAT_MESSAGE",
+        sender: sender,
+        roomId: room,
+        text: text
+    }
+
+    ws.send(JSON.stringify(msg))
+
+    addMessage(msg, true)
+
+    document.getElementById("text").value = ""
+}
+
+function addMessage(msg, isSelf){
+
+    const div = document.createElement("div")
+
+    div.classList.add("msg")
+
+    if(isSelf){
+        div.classList.add("self")
+    }
+
+    div.innerText = `[${msg.roomId}] ${msg.sender}: ${msg.text}`
+
+    messages.appendChild(div)
+
+    messages.scrollTop = messages.scrollHeight
+}
+
+document.getElementById("text").addEventListener("keypress", e => {
+    if(e.key === "Enter") send()
+})
+
+</script>
+
+</body>
+</html>
