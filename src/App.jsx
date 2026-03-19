@@ -1,36 +1,51 @@
 import { useState } from 'react';
+import { useSocket } from './context/SocketContext';
 import { Box, Typography, TextField, Button, Paper, Avatar, IconButton, InputBase, Divider, List, ListItem, ListItemText, ListItemAvatar } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import LoginIcon from '@mui/icons-material/Login';
 import ForumIcon from '@mui/icons-material/Forum';
 
 function App() {
-  const [isConnected, setIsConnected] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
   const [userName, setUserName] = useState('');
   const [roomId, setRoomId] = useState('');
 
   const [message, setMessage] = useState('');
   const [chatHistory, setChatHistory] = useState([]);
 
+  const {socket, connect, disconnect} = useSocket();
+
   const handleJoin = (e) => {
     e.preventDefault();
-    if (userName && roomId) {
+    if (userName && roomId){
+      const ws = connect(userName, roomId);
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        setChatHistory( (prev) => [...prev, data] );
+      };
+
       setIsConnected(true);
     }
   };
 
   const handleSendMessage = () => {
-    if (!message.trim()) return;
-    const newMsg = {
-      id: Date.now(),
-      sender: userName,
-      text: message,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      type: 'user'
-    };
-    setChatHistory([...chatHistory, newMsg]);
-    setMessage('');
+    if(socket && message.trim()){
+      const payload = {
+        sender: userName,
+        roomId: roomId,
+        text: message,
+      };
+
+      socket.send(JSON.stringify(payload));
+      setMessage('');
+    }
   };
+
+  const handleLogout = () => {
+    disconnect();
+    setIsConnected(false);
+  }
 
   if (!isConnected) {
     return (
