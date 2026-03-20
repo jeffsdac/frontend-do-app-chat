@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSocket } from './context/SocketContext';
 import { getHeartBeat } from './requests/HeartBeat';
-import { Box, Typography, TextField, Button, Paper, Avatar, IconButton, InputBase, Divider, List, ListItem, ListItemText, ListItemAvatar } from '@mui/material';
+import CircleIcon from '@mui/icons-material/Circle';
+import { Box, Typography, TextField, Button, Paper, Avatar, IconButton, InputBase, Divider, List, ListItem, ListItemText, ListItemAvatar, Chip } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import LoginIcon from '@mui/icons-material/Login';
 import ForumIcon from '@mui/icons-material/Forum';
@@ -49,16 +50,20 @@ function App() {
     setIsConnected(false);
   }
 
-  useEffect(() => {
+useEffect(() => {
     const fetchStatusServer = async () => {
       const response = await getHeartBeat();
-      console.log("A RESPOSTA PARA O STATUS SERVER É: ", response);
-      return response;
-    }
+      setServerIsUp(!!response);
+    };
 
     fetchStatusServer();
-  })
 
+    const interval = setInterval(fetchStatusServer, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  
   if (!isConnected) {
     return (
       <Box sx={{ 
@@ -99,6 +104,18 @@ function App() {
             >
               Conectar
             </Button>
+
+            <Chip
+              icon={<CircleIcon sx={{ fontSize: 12 }} />}
+              label={serverIsUp ? 'Servidor Online' : 'Servidor Offline'}
+              color={serverIsUp ? 'success' : 'error'}
+              variant="outlined"
+              sx={{
+                mt: 1,
+                fontWeight: 'bold'
+              }}
+            />
+
           </Box>
         </Paper>
       </Box>
