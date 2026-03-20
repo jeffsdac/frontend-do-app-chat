@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSocket } from './context/SocketContext';
+import { getHeartBeat } from './requests/HeartBeat';
 import { Box, Typography, TextField, Button, Paper, Avatar, IconButton, InputBase, Divider, List, ListItem, ListItemText, ListItemAvatar } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import LoginIcon from '@mui/icons-material/Login';
@@ -7,6 +8,7 @@ import ForumIcon from '@mui/icons-material/Forum';
 
 function App() {
   const [isConnected, setIsConnected] = useState(false);
+  const [serverIsUp, setServerIsUp] = useState(false);
   const [userName, setUserName] = useState('');
   const [roomId, setRoomId] = useState('');
 
@@ -46,6 +48,16 @@ function App() {
     disconnect();
     setIsConnected(false);
   }
+
+  useEffect(() => {
+    const fetchStatusServer = async () => {
+      const response = await getHeartBeat();
+      console.log("A RESPOSTA PARA O STATUS SERVER É: ", response);
+      return response;
+    }
+
+    fetchStatusServer();
+  })
 
   if (!isConnected) {
     return (
