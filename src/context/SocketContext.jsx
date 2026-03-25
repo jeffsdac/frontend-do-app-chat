@@ -5,8 +5,7 @@ const SocketContext = createContext(null);
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
 
-  const connect = (userName, roomId) => {
-    // Substitua pela URL do seu backend (ex: ws://localhost:8080/chat)
+  const connect = () => {
     const ws = new WebSocket(`ws://localhost:8080/ws`);
 
     ws.onopen = () => console.log("Conectado ao servidor");

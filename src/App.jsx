@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useSocket } from './context/SocketContext';
 import { getHeartBeat } from './requests/HeartBeat';
+import UserBox from './components/UserBox'
 import CircleIcon from '@mui/icons-material/Circle';
-import { Box, Typography, TextField, Button, Paper, Avatar, IconButton, InputBase, Divider, List, ListItem, ListItemText, ListItemAvatar, Chip } from '@mui/material';
+import { Box, Typography, TextField, Button, Paper, Avatar, IconButton, InputBase, Divider, Chip } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import LoginIcon from '@mui/icons-material/Login';
 import ForumIcon from '@mui/icons-material/Forum';
@@ -15,20 +16,41 @@ function App() {
 
   const [message, setMessage] = useState('');
   const [chatHistory, setChatHistory] = useState([]);
+  const [usersInChat , setUsersInChat] = useState([]);
 
   const {socket, connect, disconnect} = useSocket();
 
   const handleJoin = (e) => {
     e.preventDefault();
     if (userName && roomId){
-      const ws = connect(userName, roomId);
+      const ws = connect();
 
       ws.onmessage = (event) => {
+        console.log("RECEBEMOS MENSAGE: ", event);
         const data = JSON.parse(event.data);
-        setChatHistory( (prev) => [...prev, data] );
+
+        if (data.type === "CHAT_MESSAGE"){
+          setChatHistory( (prev) => [...prev, data] );
+        }
+        else if (data.type === "GROUP"){
+          console.log("USERS IN ROOM: ", data.usersInRoom);
+          setUsersInChat(() => [...data.usersInRoom]);
+        }
       };
 
-      setIsConnected(true);
+      ws.onopen = () => {
+        const payload = {
+          sender: userName,
+          roomId: roomId,
+          text: "",
+          type: "JOIN"
+        };
+
+        ws.send(JSON.stringify(payload));
+        setIsConnected(true);
+      }
+
+
     }
   };
 
@@ -38,6 +60,7 @@ function App() {
         sender: userName,
         roomId: roomId,
         text: message,
+        type: "CHAT_MESSAGE"
       };
 
       socket.send(JSON.stringify(payload));
@@ -63,7 +86,7 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, []);
 
-  
+
   if (!isConnected) {
     return (
       <Box sx={{ 
@@ -142,11 +165,23 @@ useEffect(() => {
           <Typography variant="body1" sx={{ mb: 2, wordBreak: 'break-all' }}>#{roomId}</Typography>
           
           <Divider sx={{ mb: 2 }} />
+
+          <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 'bold' }}>SEU USUÁRIO</Typography>
+            <UserBox
+              userName={userName}
+            ></UserBox>
+          <Divider sx={{ mb: 2 }} />
           
-          <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 'bold' }}>VOCÊ</Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: { xs: 'center', sm: 'flex-start' } }}>
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>{userName.charAt(0)}</Avatar>
-            <Typography variant="body2" sx={{ display: { xs: 'none', sm: 'block' } }}>{userName}</Typography>
+          <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 'bold' }}>USUÁRIOS ONLINE</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: { xs: 'center', sm: 'flex-start' }, flexWrap: 'wrap' }}>
+            {
+              usersInChat.map( (user, index) => {
+                 return (
+                 <UserBox key={index} userName={user}/>
+                )
+              })
+
+            }
           </Box>
         </Box>
 
@@ -170,7 +205,7 @@ useEffect(() => {
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {chatHistory.map((msg) => (
             <Box 
-              key={msg.id} 
+              key={msg} 
               sx={{ display: 'flex', justifyContent: msg.sender === userName ? 'flex-end' : 'flex-start' }}
             >
               <Paper sx={{ 
