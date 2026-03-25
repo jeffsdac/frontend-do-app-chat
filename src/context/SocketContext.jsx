@@ -6,7 +6,7 @@ export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
 
   const connect = () => {
-    const ws = new WebSocket(`ws://localhost:8080/ws`);
+    const ws = new WebSocket(`wss://projeto-chat-production-dcaf.up.railway.app/ws`);
 
     ws.onopen = () => console.log("Conectado ao servidor");
     ws.onclose = () => console.log("Desconectado");

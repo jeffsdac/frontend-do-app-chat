@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:8080"
+const BASE_URL = "https://projeto-chat-production-dcaf.up.railway.app"
 
 export async function getHeartBeat() {
     const endpoint = "/api/v1/heartbeat";
